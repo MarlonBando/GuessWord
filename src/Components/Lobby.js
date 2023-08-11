@@ -40,12 +40,12 @@ class Lobby extends React.Component {
             'name': props.name,
             'avatarImage': props.avatarImage,
             'score': 0,
-            'gameMode':0,
-            'nTotRound':3,
+            'gameMode': 0,
+            'nTotRound': 3,
             'wordPerRound': 10,
             'roundTime': 60000,
-            'wordMaxTime':20000,
-            'correctClass':''
+            'wordMaxTime': 20000,
+            'correctClass': ''
         };
 
         this.state = {
@@ -101,11 +101,25 @@ class Lobby extends React.Component {
 
             gameMode: 0,
 
-            isError:false
+            isError: false
         }
     }
 
+    beforeUnloadHandler = (e) => {
+
+        e.preventDefault();
+        // Additional actions before page unloads
+        var connectedPeerPacketTmp = this.state.connectedPeerPacket;
+        for (var idConnectedPeer in connectedPeerPacketTmp) {
+            connectedPeerPacketTmp[idConnectedPeer].conn.close();
+        }
+
+        e.returnValue = true;
+    }
+
     componentDidMount() {
+        window.addEventListener('beforeunload', this.beforeUnloadHandler);
+        window.removeEventListener('beforeunload', this.beforeUnloadHandler);
         if (this.state.isHost) {
             // Every time that the host receive a connection it will send to 
             // the connected peer the list of the peer's id that are already connected to the host.
@@ -147,10 +161,7 @@ class Lobby extends React.Component {
             });
 
             this.state.myPeer.on('disconnected', () => {
-                var connectedPeerPacketTmp = this.state.connectedPeerPacket;
-                for (var idConnectedPeer in connectedPeerPacketTmp) {
-                    connectedPeerPacketTmp[idConnectedPeer].conn.close();
-                }
+                /** TODO: Host disconnesso -> invio messaggio fine partita ai partecipanti */
             });
         } else {
             // Siamo nel peer client.
@@ -199,9 +210,9 @@ class Lobby extends React.Component {
                         this.setState({
                             guessList: guessListTmp,
                             goToGame: true,
-                            wordMaxTime:hostPeerPacket.wordMaxTime,
-                            nTotRound:hostPeerPacket.nTotRound,
-                            wordPerRound:hostPeerPacket.wordPerRound,
+                            wordMaxTime: hostPeerPacket.wordMaxTime,
+                            nTotRound: hostPeerPacket.nTotRound,
+                            wordPerRound: hostPeerPacket.wordPerRound,
                             roundTime: hostPeerPacket.roundTime,
                             gameMode: hostPeerPacket.gameMode
                         });
@@ -251,12 +262,16 @@ class Lobby extends React.Component {
                 }
             });
 
-            this.state.myPeer.on('error',(err)=>{
+            this.state.myPeer.on('error', (err) => {
                 this.setState({
                     isError: true
                 });
             })
         }
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('beforeunload', this.beforeUnloadHandler);
     }
 
     getWords() {
@@ -299,7 +314,7 @@ class Lobby extends React.Component {
             peerPacketTmp.idMessage = 1;
             peerPacketTmp.guessList = guessListTmp;
             peerPacketTmp.conn = null;
-            peerPacketTmp.wordMaxTime=wordMaxTimeTmp;
+            peerPacketTmp.wordMaxTime = wordMaxTimeTmp;
             peerPacketTmp.gameMode = gameModeTmp;
             peerPacketTmp.roundTime = roundTimeTmp;
             peerPacketTmp.nTotRound = nTotRoundTmp;
@@ -319,8 +334,8 @@ class Lobby extends React.Component {
     }
 
     render() {
-        if(this.state.isError){
-            return <ErrorPage/>
+        if (this.state.isError) {
+            return <ErrorPage />
         }
 
         const connectedPeerPacketTmp = this.state.connectedPeerPacket;
@@ -356,6 +371,8 @@ class Lobby extends React.Component {
         );
 
     }
+
+
 }
 
 export default withRouter(Lobby);
